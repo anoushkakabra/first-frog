@@ -2,20 +2,20 @@
 
 import { Database } from 'sqlite3';
 
-const db = new Database('./votes.db');
+const db = new Database('./votesCount.db');
 
 export default async function handler(req, res) {
   const { userId, vote } = req.body;
 
   if (req.method === 'POST') {
     // Check if the user has already voted
-    db.get('SELECT * FROM votes WHERE userId = ?', [userId], (err, row) => {
+    db.get('SELECT * FROM votesCount WHERE userId = ?', [userId], (err, row) => {
       if (row) {
         return res.status(400).json({ error: 'User has already voted' });
       }
 
       // Insert new vote
-      db.run('INSERT INTO votes (userId, vote) VALUES (?, ?)', [userId, vote], (err) => {
+      db.run('INSERT INTO votesCount (userId, vote) VALUES (?, ?)', [userId, vote], (err) => {
         if (err) {
           return res.status(500).json({ error: 'Database error' });
         }

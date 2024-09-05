@@ -2,11 +2,11 @@
 
 import { Database } from 'sqlite3';
 
-const db = new Database('./votes.db');
+const db = new Database('./votesCount.db');
 
 export default function handler(req, res) {
   if (req.method === 'GET') {
-    db.all('SELECT vote, COUNT(*) AS count FROM votes GROUP BY vote', [], (err, rows) => {
+    db.all('SELECT vote, COUNT(*) AS count FROM votesCount GROUP BY vote', [], (err, rows) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' });
       }
