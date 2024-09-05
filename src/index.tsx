@@ -3,7 +3,6 @@ import { Button, Frog } from 'frog';
 import { devtools } from 'frog/dev';
 import { kv } from '@vercel/kv'; // Import Vercel KV for vote storage
 import dotenv from 'dotenv';
-import Confetti from 'react-dom-confetti'; // Confetti animation
 
 dotenv.config();
 
@@ -26,16 +25,6 @@ const getUserId = () => {
   return userId;
 };
 
-// Confetti configuration for aesthetic appeal
-const confettiConfig = {
-  angle: 90,
-  spread: 45,
-  startVelocity: 45,
-  elementCount: 50,
-  decay: 0.9,
-  colors: ['#bb0000', '#ffffff'],
-};
-
 // Define frame for the Kramer voting contest
 app.frame('/', async (c) => {
   const { buttonValue, status } = c;
@@ -43,7 +32,6 @@ app.frame('/', async (c) => {
   let yesVotes = 0;
   let noVotes = 0;
   let userVote = null;
-  let showConfetti = false;
 
   const userId = getUserId();
 
@@ -63,7 +51,6 @@ app.frame('/', async (c) => {
 
       // Mark the user's vote as completed
       userVote = vote;
-      showConfetti = true; // Trigger confetti when the user votes
     }
 
     // Fetch the updated vote counts from KV
@@ -77,32 +64,47 @@ app.frame('/', async (c) => {
     image: (
       <div
         style={{
-          alignItems: 'center',
-          backgroundImage: `url('https://cdn.psychologytoday.com/sites/default/files/styles/image-article_inline_full_caption/public/field_blog_entry_images/2022-01/image_for_blog_-_the_brain_as_a_prediction_machine_-_key_to_the_self_-_fran_kie_-_adobestock_1.jpeg?itok=wPqRyd8u')`,
-          backgroundSize: 'full',
-          backgroundPosition: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh', // Use full viewport height
-          justifyContent: 'center',
-          overflow: 'hidden',
-          textAlign: 'center',
+          position: 'relative', 
+          height: '100vh',
           width: '100%',
-          fontFamily: "'Playfair Display', serif", // Elegant serif font
-          color: 'white',
+          display: 'flex', 
+          justifyContent: 'center',
+          alignItems: 'center',
+          overflow: 'hidden',
         }}
       >
-        {/* Confetti animation */}
-        <Confetti active={showConfetti} config={confettiConfig} />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: `url('https://cdn.analyticsvidhya.com/wp-content/uploads/2024/03/Stock-Market-Prediction-Using-Machine-Learning-.jpg')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            transition: 'opacity 0.8s ease-in-out, transform 0.8s ease-in-out',
+            opacity: vote ? 0.5 : 1, // Only background gets this opacity change
+            transform: vote ? 'scale(1.5)' : 'scale(1)', // Only background zooms
+            display: 'flex',
+          }}
+        ></div>
+  
 
         <div
           style={{
+            position: 'relative', // Make sure the text stays on top of the background
             fontSize: '3rem',
             marginBottom: '20px',
             padding: '0 60px',
             whiteSpace: 'pre-wrap',
             fontWeight: 400,
             textShadow: '2px 2px 4px rgba(0, 0, 0, 0.7)',
+            opacity: vote ? 1 : 0, // Fade in effect for the text content
+            transition: 'opacity 1s ease-in-out, transform 1s ease-in-out', // Animation for fading in
+            transform: vote ? 'translateY(0)' : 'translateY(-50px)', // Slide up effect for text
+            color: 'white',
+            display: 'flex',
           }}
         >
           {userVote
@@ -114,15 +116,10 @@ app.frame('/', async (c) => {
     intents: userVote
       ? [] // If user has already voted, no buttons are shown
       : [
-          <Button value="yes">
-            👍 Yes
-          </Button>,
-          <Button value="no">
-            👎 No
-          </Button>,
+          <Button value="yes">👍 Yes</Button>,
+          <Button value="no">👎 No</Button>,
         ],
-  });
+  });  
 });
 
-// Enable devtools for testing
 devtools(app, { serveStatic });
