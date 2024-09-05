@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "frog dev"
-  },
+    "dev": "frog dev",
+    "vercel-build": "frog build"
+  },  
   "dependencies": {
     "@hono/node-server": "latest",
     "frog": "latest",
