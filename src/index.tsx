@@ -3,6 +3,7 @@ import { Button, Frog } from 'frog';
 import { devtools } from 'frog/dev';
 import { kv } from '@vercel/kv'; // Import Vercel KV for vote storage
 import dotenv from 'dotenv';
+import Confetti from 'react-dom-confetti'; // Confetti animation
 
 dotenv.config();
 
@@ -25,42 +26,51 @@ const getUserId = () => {
   return userId;
 };
 
+// Confetti configuration for aesthetic appeal
+const confettiConfig = {
+  angle: 90,
+  spread: 45,
+  startVelocity: 45,
+  elementCount: 50,
+  decay: 0.9,
+  colors: ['#bb0000', '#ffffff'],
+};
+
 // Define frame for the Kramer voting contest
 app.frame('/', async (c) => {
   const { buttonValue, status } = c;
   const vote = buttonValue;
   let yesVotes = 0;
   let noVotes = 0;
+  let userVote = null;
+  let showConfetti = false;
 
-  if (vote) {
-    const userId = getUserId();
+  const userId = getUserId();
 
-    try {
-      // Check if the user has already voted using KV
-      const existingVote = await kv.get(`vote_${userId}`);
+  try {
+    // Check if the user has already voted using KV
+    userVote = await kv.get(`vote_${userId}`);
+    if (!userVote && vote) {
+      // Store the new vote in KV
+      await kv.set(`vote_${userId}`, vote);
 
-      if (!existingVote) {
-        // Store the new vote in KV
-        await kv.set(`vote_${userId}`, vote);
-
-        // Increment the vote count in KV
-        if (vote === 'yes') {
-          await kv.incr('yesVotes');
-        } else if (vote === 'no') {
-          await kv.incr('noVotes');
-        }
+      // Increment the vote count in KV
+      if (vote === 'yes') {
+        await kv.incr('yesVotes');
+      } else if (vote === 'no') {
+        await kv.incr('noVotes');
       }
-    } catch (error) {
-      console.error('Error storing vote:', error);
+
+      // Mark the user's vote as completed
+      userVote = vote;
+      showConfetti = true; // Trigger confetti when the user votes
     }
 
     // Fetch the updated vote counts from KV
-    try {
-      yesVotes = (await kv.get('yesVotes')) || 0;
-      noVotes = (await kv.get('noVotes')) || 0;
-    } catch (error) {
-      console.error('Error fetching vote counts:', error);
-    }
+    yesVotes = (await kv.get('yesVotes')) || 0;
+    noVotes = (await kv.get('noVotes')) || 0;
+  } catch (error) {
+    console.error('Error with vote management:', error);
   }
 
   return c.res({
@@ -68,38 +78,49 @@ app.frame('/', async (c) => {
       <div
         style={{
           alignItems: 'center',
-          background:
-            status === 'response'
-              ? 'linear-gradient(to right, #432889, #17101F)'
-              : 'black',
-          backgroundSize: '100% 100%',
+          backgroundImage: `url('https://cdn.psychologytoday.com/sites/default/files/styles/image-article_inline_full_caption/public/field_blog_entry_images/2022-01/image_for_blog_-_the_brain_as_a_prediction_machine_-_key_to_the_self_-_fran_kie_-_adobestock_1.jpeg?itok=wPqRyd8u')`,
+          backgroundSize: 'full',
+          backgroundPosition: 'center',
           display: 'flex',
           flexDirection: 'column',
-          height: '100%',
+          height: '100vh', // Use full viewport height
           justifyContent: 'center',
+          overflow: 'hidden',
           textAlign: 'center',
           width: '100%',
+          fontFamily: "'Playfair Display', serif", // Elegant serif font
+          color: 'white',
         }}
       >
+        {/* Confetti animation */}
+        <Confetti active={showConfetti} config={confettiConfig} />
+
         <div
           style={{
-            color: 'white',
             fontSize: '3rem',
-            fontFamily: 'Helvetica, Arial, sans-serif',
-            padding: '0 120px',
+            marginBottom: '20px',
+            padding: '0 60px',
             whiteSpace: 'pre-wrap',
+            fontWeight: 400,
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.7)',
           }}
         >
-          {status === 'response'
-            ? `You voted: ${vote}. \nCurrent results:\nYes - ${yesVotes}, No - ${noVotes}`
-            : 'Vote in the Kramer Contest!'}
+          {userVote
+            ? `You voted: ${userVote}. \nCurrent results:\nYes - ${yesVotes}, No - ${noVotes}`
+            : 'Vote in the Kramer Contest!\nThere will be over 10,000 Kramer predictions before 9/29 midnight!'}
         </div>
       </div>
     ),
-    intents: [
-      <Button value="yes">👍 Yes</Button>,
-      <Button value="no">👎 No</Button>,
-    ],
+    intents: userVote
+      ? [] // If user has already voted, no buttons are shown
+      : [
+          <Button value="yes">
+            👍 Yes
+          </Button>,
+          <Button value="no">
+            👎 No
+          </Button>,
+        ],
   });
 });
 

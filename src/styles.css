@@ -1,0 +1,20 @@
+.kramer-frame {
+    background-image: url('https://cdn.psychologytoday.com/sites/default/files/styles/image-article_inline_full_caption/public/field_blog_entry_images/2022-01/image_for_blog_-_the_brain_as_a_prediction_machine_-_key_to_the_self_-_fran_kie_-_adobestock_1.jpeg?itok=wPqRyd8u');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: white;
+    text-align: center;
+  }
+  
+  .kramer-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    padding: 0 60px;
+    font-weight: 400;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  }
+  
