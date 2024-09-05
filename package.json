@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "frog dev",
     "vercel-build": "frog build"
-  },  
+  },
   "dependencies": {
     "@hono/node-server": "latest",
+    "@vercel/kv": "^2.0.0",
+    "dotenv": "^16.4.5",
     "frog": "latest",
     "hono": "^4",
     "next": "^14.2.8",
@@ -15,6 +17,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^22.5.4",
     "typescript": "latest"
   }
 }

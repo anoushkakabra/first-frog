@@ -1,8 +1,12 @@
 import { serveStatic } from '@hono/node-server/serve-static';
-import { Button, Frog, TextInput } from 'frog';
+import { Button, Frog } from 'frog';
 import { devtools } from 'frog/dev';
-import axios from 'axios'; // For backend calls to update the vote count
+import { kv } from '@vercel/kv'; // Import Vercel KV for vote storage
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+// Initialize the Frog app
 export const app = new Frog({
   title: 'Kramer Contest Frame',
 });
@@ -11,42 +15,51 @@ app.use('/*', serveStatic({ root: './public' }));
 
 // Utility function to get or set a persistent userId
 const getUserId = () => {
-  if (typeof window !== 'undefined') {
-    let userId = localStorage.getItem('userId');
-    if (!userId) {
-      userId = `user-${Math.random().toString(36).substring(2, 15)}`;
-      localStorage.setItem('userId', userId);
-    }
-    return userId;
+  if (typeof window === 'undefined') return `user-${Math.random().toString(36).substring(2, 15)}`;
+
+  let userId = localStorage.getItem('userId');
+  if (!userId) {
+    userId = `user-${Math.random().toString(36).substring(2, 15)}`;
+    localStorage.setItem('userId', userId);
   }
-  return `user-${Math.random().toString(36).substring(2, 15)}`;
+  return userId;
 };
 
 // Define frame for the Kramer voting contest
 app.frame('/', async (c) => {
-  const { buttonValue, inputText, status } = c;
-  
+  const { buttonValue, status } = c;
   const vote = buttonValue;
   let yesVotes = 0;
   let noVotes = 0;
 
   if (vote) {
     const userId = getUserId();
-    
+
     try {
-      // Send vote to the Vercel API
-      await axios.post('/api/vote', { userId, vote });
+      // Check if the user has already voted using KV
+      const existingVote = await kv.get(`vote_${userId}`);
+
+      if (!existingVote) {
+        // Store the new vote in KV
+        await kv.set(`vote_${userId}`, vote);
+
+        // Increment the vote count in KV
+        if (vote === 'yes') {
+          await kv.incr('yesVotes');
+        } else if (vote === 'no') {
+          await kv.incr('noVotes');
+        }
+      }
     } catch (error) {
-      console.error('Error submitting vote:', error);
+      console.error('Error storing vote:', error);
     }
-    
-    // Fetch current vote counts from the Vercel API
+
+    // Fetch the updated vote counts from KV
     try {
-      const response = await axios.get('/api/votes');
-      yesVotes = response.data.yes;
-      noVotes = response.data.no;
+      yesVotes = (await kv.get('yesVotes')) || 0;
+      noVotes = (await kv.get('noVotes')) || 0;
     } catch (error) {
-      console.error('Error fetching votes:', error);
+      console.error('Error fetching vote counts:', error);
     }
   }
 
@@ -62,7 +75,6 @@ app.frame('/', async (c) => {
           backgroundSize: '100% 100%',
           display: 'flex',
           flexDirection: 'column',
-          flexWrap: 'nowrap',
           height: '100%',
           justifyContent: 'center',
           textAlign: 'center',
@@ -72,11 +84,8 @@ app.frame('/', async (c) => {
         <div
           style={{
             color: 'white',
-            fontSize: 60,
-            fontStyle: 'normal',
-            letterSpacing: '-0.025em',
-            lineHeight: 1.4,
-            marginTop: 30,
+            fontSize: '3rem',
+            fontFamily: 'Helvetica, Arial, sans-serif',
             padding: '0 120px',
             whiteSpace: 'pre-wrap',
           }}

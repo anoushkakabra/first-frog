@@ -1,27 +1,19 @@
-// ./api/votes.js
+import { kv } from '@vercel/kv';
+import dotenv from 'dotenv';
+dotenv.config();
 
-import { Database } from 'sqlite3';
-
-const db = new Database('./votesCount.db');
-
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method === 'GET') {
-    db.all('SELECT vote, COUNT(*) AS count FROM votesCount GROUP BY vote', [], (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
+    try {
+      // Get the current vote counts from KV
+      const yesVotes = (await kv.get('yesVotes')) || 0;
+      const noVotes = (await kv.get('noVotes')) || 0;
 
-      const voteCounts = { yes: 0, no: 0 };
-      rows.forEach(row => {
-        if (row.vote === 'yes') {
-          voteCounts.yes = row.count;
-        } else if (row.vote === 'no') {
-          voteCounts.no = row.count;
-        }
-      });
-
-      return res.status(200).json(voteCounts);
-    });
+      return res.status(200).json({ yes: yesVotes, no: noVotes });
+    } catch (error) {
+      console.error('Error fetching votes:', error);
+      return res.status(500).json({ error: 'Database error' });
+    }
   } else {
     return res.status(405).json({ error: 'Method not allowed' });
   }
